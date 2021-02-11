@@ -14,6 +14,8 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 BASE_URL = 'https://praktikum.yandex.ru/api/user_api/homework_statuses/'
 
+logging.basicConfig(filename='bot.log', filemode='w')
+
 
 def parse_homework_status(homework):
     homework_name = homework['homework_name']
@@ -34,14 +36,12 @@ def get_homework_statuses(current_timestamp):
 
 
 def send_message(message, bot_client):
-    logging.basicConfig(filename='bot.log', filemode='w')
     logging.info('Отправлено сообщение в Telegram')
     return bot_client.send_message(chat_id=CHAT_ID, text=message)
 
 
 def main():
-    logging.basicConfig(filename='bot.log', filemode='w')
-    logging.debug('Запуск Telegram-бота')
+    logging.info('Запуск Telegram-бота')
     bot_client = telegram.Bot(token=TELEGRAM_TOKEN)
     # current_timestamp = int(time.time())  # начальное значение timestamp
     current_timestamp = int(0)
@@ -57,6 +57,7 @@ def main():
             time.sleep(300)  # опрашивать раз в пять минут
 
         except Exception as e:
+            logging.info('Ошибка')
             print(f'Бот столкнулся с ошибкой: {e}')
             time.sleep(5)
 
