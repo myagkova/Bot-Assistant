@@ -50,10 +50,10 @@ def main():
         while True:
             try:
                 new_homework = get_homework_statuses(current_timestamp)
-                bot_client.send_message(chat_id=CHAT_ID, 'Heroku test!')
+                bot_client.send_message(chat_id=CHAT_ID, text='Heroku test!')
                 if new_homework.get('homeworks'):
                     send_message(parse_homework_status(
-                        new_homework.get('homeworks')[0]))
+                        new_homework.get('homeworks')[0]), bot_client)
                 current_timestamp = new_homework.get(
                     'current_date', current_timestamp)  # обновить timestamp
                 time.sleep(300)  # опрашивать раз в пять минут
