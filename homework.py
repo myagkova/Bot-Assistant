@@ -27,6 +27,8 @@ def parse_homework_status(homework):
 
 
 def get_homework_statuses(current_timestamp):
+    if current_timestamp is None:
+        current_timestamp = int(time.time())
     params = {"from_date": current_timestamp}
     headers = {'Authorization': f'OAuth {PRAKTIKUM_TOKEN}'}
     homework_statuses = requests.get(
@@ -41,28 +43,28 @@ def send_message(message, bot_client):
 
 
 def main():
-    logging.info('Запуск Telegram-бота')
-    try:
-        bot_client = telegram.Bot(token=TELEGRAM_TOKEN)
-        # current_timestamp = int(time.time())  # начальное значение timestamp
-        current_timestamp = int(0)
+    logging.debug('Запуск Telegram-бота')
+    bot_client = telegram.Bot(token=TELEGRAM_TOKEN)
+    # current_timestamp = int(time.time())  # начальное значение timestamp
+    current_timestamp = int(0)
 
-        while True:
-            try:
-                new_homework = get_homework_statuses(current_timestamp)
-                if new_homework.get('homeworks'):
-                    send_message(parse_homework_status(
-                        new_homework.get('homeworks')[0]), bot_client)
-                current_timestamp = new_homework.get(
-                    'current_date', current_timestamp)  # обновить timestamp
-                time.sleep(300)  # опрашивать раз в пять минут
+    while True:
+        try:
+            new_homework = get_homework_statuses(current_timestamp)
+            if new_homework.get('homeworks'):
+                send_message(parse_homework_status(
+                    new_homework.get('homeworks')[0]), bot_client)
+            current_timestamp = new_homework.get(
+                'current_date', current_timestamp)  # обновить timestamp
+            time.sleep(300)  # опрашивать раз в пять минут
 
-            except Exception as e:
-                logging.error(f'Бот столкнулся с ошибкой: {e}')
-                print(f'Бот столкнулся с ошибкой: {e}')
-                time.sleep(5)
-    except Exception as e:
-        logging.error(f'Бот столкнулся с ошибкой: {e}')
+        except Exception as e:
+            logging.error(f'Бот столкнулся с ошибкой: {e}')
+            bot_client.send_message(
+                chat_id=CHAT_ID, text=f'Бот столкнулся с ошибкой: {e}'
+            )
+            print(f'Бот столкнулся с ошибкой: {e}')
+            time.sleep(5)
 
 
 if __name__ == '__main__':
