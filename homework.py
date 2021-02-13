@@ -1,7 +1,8 @@
+import logging
 import os
 import time
+from json import JSONDecodeError
 
-import logging
 import requests
 import telegram
 from dotenv import load_dotenv
@@ -18,12 +19,21 @@ logging.basicConfig(filename='bot.log', filemode='w', level=logging.DEBUG)
 
 
 def parse_homework_status(homework):
+    if 'homework_name' not in homework:
+        raise Exception('Неверный формат, homework_name не существует.')
+    if 'status' not in homework:
+        raise Exception('Неверный формат, status не существует.')
     homework_name = homework['homework_name']
-    if homework['status'] == 'rejected':
+    status = homework['status']
+    if status == 'rejected':
         verdict = 'К сожалению в работе нашлись ошибки.'
-    else:
+    elif status == 'reviewing':
+        verdict = 'Работа находится на ревью.'
+    elif status == 'approved':
         verdict = ('Ревьюеру всё понравилось, '
                    'можно приступать к следующему уроку.')
+    else:
+        raise Exception(f'Неизвестный статус: {status}.')
     return f'У вас проверили работу "{homework_name}"!\n\n{verdict}'
 
 
@@ -43,6 +53,12 @@ def send_message(message, bot_client):
     return bot_client.send_message(chat_id=CHAT_ID, text=message)
 
 
+def handle_error(bot_client, error):
+    logging.error(error)
+    bot_client.send_message(chat_id=CHAT_ID, text=error)
+    time.sleep(5)
+
+
 def main():
     logging.debug('Запуск Telegram-бота')
     bot_client = telegram.Bot(token=TELEGRAM_TOKEN)
@@ -57,14 +73,16 @@ def main():
             current_timestamp = new_homework.get(
                 'current_date', current_timestamp)
             time.sleep(300)
-
-        except Exception as e:
-            logging.error(f'Бот столкнулся с ошибкой: {e}')
-            bot_client.send_message(
-                chat_id=CHAT_ID, text=f'Бот столкнулся с ошибкой: {e}'
+        except requests.exceptions.RequestException as e:
+            handle_error(
+                bot_client, f'Сервис Яндекс.Практикум недоступен: {e}'
             )
-            print(f'Бот столкнулся с ошибкой: {e}')
-            time.sleep(5)
+        except JSONDecodeError as e:
+            handle_error(
+                bot_client, f'Ответ сервера не содержит валидный json: {e}'
+            )
+        except Exception as e:
+            handle_error(bot_client, f'Бот столкнулся с ошибкой: {e}')
 
 
 if __name__ == '__main__':
